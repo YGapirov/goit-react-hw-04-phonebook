@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { GlobalStyle } from '../GlobalStyle';
+import { GlobalStyle } from '../../GlobalStyle';
 import { nanoid } from 'nanoid';
 
 import { ContactList } from '../ContactList/ContactList';
