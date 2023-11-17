@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { GlobalStyle } from '../../GlobalStyle';
 import { nanoid } from 'nanoid';
 
@@ -9,82 +9,63 @@ import { Container, Title, SubTitle } from './App.styled';
 
 const LsKey = 'contacts';
 
-export class App extends Component {
-  state = {
-    contacts: [
-      { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
-      { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
-      { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-      { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-    ],
-    filter: '',
-  };
+//зовнішня функція, яку передаєм в useState
+const getInitialContacts = () => {
+  const savedContacts = window.localStorage.getItem(LsKey); //виклакається і відображається ЛС до монтування
+  return savedContacts !== null ? JSON.parse(savedContacts) : initialContacts; //тернарний
+};
 
-  componentDidMount() {
-    const savedContacts = window.localStorage.getItem(LsKey);
-    if (savedContacts !== null) {
-      this.setState({
-        contacts: JSON.parse(savedContacts),
-      });
-    }
-  }
+const initialContacts = [
+  { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
+  { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
+  { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
+  { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
+];
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.contacts !== this.state.contacts) {
-      window.localStorage.setItem(LsKey, JSON.stringify(this.state.contacts));
-    }
-  }
-  addContact = values => {
+export const App = () => {
+  const [contacts, setContacts] = useState(getInitialContacts);
+  const [filter, setFilter] = useState('');
+
+  useEffect(() => {
+    window.localStorage.setItem(LsKey, JSON.stringify(contacts));
+  }, [contacts]); //під капотом порівняється значення контакт попередні з введеним
+
+  const addContact = values => {
     const contact = { ...values, id: nanoid() };
-    const { contacts } = this.state;
+
     if (contacts.some(contact => contact.name === values.name)) {
       alert(`${values.name} is already on contacts.`);
       return;
     }
-    this.setState(prevState => {
-      return {
-        contacts: [...prevState.contacts, contact],
-      };
-    });
+
+    setContacts(prevState => [...prevState, contact]);
   };
 
-  updateFilter = values => {
-    this.setState({
-      filter: values,
-    });
+  const updateFilter = values => {
+    setFilter(values);
   };
 
-  handleDelete = contactId => {
-    this.setState(prevState => {
-      return {
-        contacts: prevState.contacts.filter(
-          contact => contact.id !== contactId
-        ),
-      };
-    });
-  };
-
-  render() {
-    const { contacts, filter } = this.state;
-
-    const visibleContacts = contacts.filter(contact => {
-      const hasName = contact.name.toLowerCase().includes(filter.toLowerCase());
-      return hasName;
-    });
-    return (
-      <Container>
-        <Title>Phonebook</Title>
-        <ContactForm onAddContact={this.addContact} />
-        <SubTitle>Contacts</SubTitle>
-        <Filter filter={filter} onFilter={this.updateFilter} />
-        {visibleContacts.length > 0 && (
-          <ContactList
-            contacts={visibleContacts}
-            onDelete={this.handleDelete}
-          />
-        )}
-        <GlobalStyle />
-      </Container>
+  const handleDelete = contactId => {
+    setContacts(prevState =>
+      prevState.filter(contact => contact.id !== contactId)
     );
-  }
-}
+  };
+
+  const visibleContacts = contacts.filter(contact => {
+    const hasName = contact.name.toLowerCase().includes(filter.toLowerCase());
+    return hasName;
+  });
+
+  return (
+    <Container>
+      <Title>Phonebook</Title>
+      <ContactForm onAddContact={addContact} />
+      <SubTitle>Contacts</SubTitle>
+      <Filter filter={filter} onFilter={updateFilter} />
+      {visibleContacts.length > 0 && (
+        <ContactList contacts={visibleContacts} onDelete={handleDelete} />
+      )}
+      <GlobalStyle />
+    </Container>
+  );
+};
